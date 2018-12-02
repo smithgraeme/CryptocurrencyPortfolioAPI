@@ -16,16 +16,19 @@ module.exports.createPortfolio = async (event, context) => {
   var params = {
     Item: {
      "identifierHash": {
-       S: "as7df809asd7f9a0s"
+       S: parsedBody.name
       },
+      "name": {
+        S: parsedBody.name
+       },
      "coins": {
-       S: "test"
+       S: JSON.stringify(parsedBody.coins)
       }
     },
     TableName: process.env.table
   };
 
-  await dynamodb.putItem(params).Promise();
+  await dynamo.putItem(params).promise();
 
   return {
     statusCode: 200,

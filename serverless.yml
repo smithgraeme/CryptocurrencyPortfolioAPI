@@ -3,22 +3,13 @@ service: CryptocurrencyPortfolioAPI
 provider:
   name: aws
   runtime: nodejs8.10
-
-# you can add statements to the Lambda function's IAM Role here
-#  iamRoleStatements:
-#    - Effect: "Allow"
-#      Action:
-#        - "s3:ListBucket"
-#      Resource: { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "ServerlessDeploymentBucket" } ] ]  }
-#    - Effect: "Allow"
-#      Action:
-#        - "s3:PutObject"
-#      Resource:
-#        Fn::Join:
-#          - ""
-#          - - "arn:aws:s3:::"
-#            - "Ref" : "ServerlessDeploymentBucket"
-#            - "/*"
+  memorySize: 128
+  iamRoleStatements:
+     - Effect: "Allow"
+       Action:
+         - "dynamodb:UpdateItem"
+         - "dynamodb:PutItem"
+       Resource: "*"
 
 # you can add packaging information here
 #package:
