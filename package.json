@@ -1,0 +1,22 @@
+{
+  "name": "cryptocurrencyportfolioapi",
+  "version": "1.0.0",
+  "description": "",
+  "main": "portfolioService.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/smithgraeme/CryptocurrencyPortfolioAPI.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/smithgraeme/CryptocurrencyPortfolioAPI/issues"
+  },
+  "homepage": "https://github.com/smithgraeme/CryptocurrencyPortfolioAPI#readme",
+  "dependencies": {
+    "uuid": "^3.3.2"
+  }
+}

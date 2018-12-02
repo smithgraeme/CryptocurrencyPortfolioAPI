@@ -3,22 +3,14 @@ service: CryptocurrencyPortfolioAPI
 provider:
   name: aws
   runtime: nodejs8.10
-  memorySize: 128
+  memorySize: 512
   iamRoleStatements:
      - Effect: "Allow"
        Action:
          - "dynamodb:UpdateItem"
          - "dynamodb:PutItem"
-       Resource: "*"
-
-# you can add packaging information here
-#package:
-#  include:
-#    - include-me.js
-#    - include-me-dir/**
-#  exclude:
-#    - exclude-me.js
-#    - exclude-me-dir/**
+         - "dynamodb:GetItem"
+       Resource: "arn:aws:dynamodb:*:*:table/${self:resources.Resources.portfoliosTable.Properties.TableName}"
 
 functions:
   createPortfolio:
@@ -27,6 +19,24 @@ functions:
       - http:
           path: createPortfolio
           method: post
+    environment:
+      stage: ${self:provider.stage}
+      table: ${self:resources.Resources.portfoliosTable.Properties.TableName}
+
+  getPortfolio:
+    handler: portfolioService.getPortfolio
+    events:
+      - http:
+          path: getPortfolio
+          method: get
+      - http:
+          path: portfolio/{id}
+          method: get
+          request:
+            parameters:
+              paths:
+                id: true
+
     environment:
       stage: ${self:provider.stage}
       table: ${self:resources.Resources.portfoliosTable.Properties.TableName}
