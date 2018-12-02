@@ -15,22 +15,22 @@ module.exports.createPortfolio = async (event, context) => {
   console.log(JSON.stringify(parsedBody,null,2));
   //console.log(parsedBody);
 
-  const uuid = uuidv4().replace(/-/g, ''); //the dashes are annoying in URLs
-  const hashedUuid = getHashedValue(uuid);
+  const getUuid = () => uuidv4().replace(/-/g, ''); //the dashes are annoying in URLs. g replaces globally (multiple instances)
 
-  console.log(uuid);
+  const portfolioId = getUuid();
+  const portfolioIdHashed = getHashedValue(portfolioId);
+
+  const editSecretToken = getUuid();
+  const editSecretTokenHashed = getHashedValue(editSecretToken);
+
+  console.log(portfolioId);
 
   const params = {
     Item: {
-     "identifierHash": {
-       S: hashedUuid
-      },
-      "name": {
-        S: parsedBody.name
-       },
-     "coins": {
-       S: JSON.stringify(parsedBody.coins)
-      }
+     "identifierHash": {S: portfolioIdHashed},
+     "editSecretTokenHashed": {S: editSecretTokenHashed},
+     "name": {S: parsedBody.name},
+     "coins": {S: JSON.stringify(parsedBody.coins)}
     },
     TableName: tableName
   };
@@ -40,25 +40,68 @@ module.exports.createPortfolio = async (event, context) => {
   return {
     statusCode: 200,
     body: JSON.stringify({
-      portfolioIdentifier: uuid,
-      //hashedUuid: hashedUuid
+      portfolioIdentifier: portfolioId,
+      editSecretToken: editSecretToken
     })
   };
 };
 
+module.exports.editPortfolio = async (event, context) => {
+  //console.log(JSON.stringify(event,null,2));
+
+  //console.log(event.body);
+
+  const parsedBody = JSON.parse(event.body);
+
+  console.log(JSON.stringify(parsedBody,null,2));
+  //console.log(parsedBody);
+
+  const identifierHash = await getPrimaryKeyFromEditTokenIndex(parsedBody.editToken);
+
+  const params = {
+    Key: {
+     "identifierHash": identifierHash,
+    },
+    ExpressionAttributeNames: { '#coins': 'coins' },
+    ExpressionAttributeValues: { ':coins': { 'S': JSON.stringify(parsedBody.coins) }},
+    UpdateExpression: "SET #coins = :coins",
+    TableName: tableName
+  };
+
+  await dynamodb.updateItem(params).promise();
+
+  return {
+    statusCode: 200,
+    // body: JSON.stringify({
+    // })
+  };
+};
+
+async function getPrimaryKeyFromEditTokenIndex(editToken){
+  const params = {
+    KeyConditionExpression: "#editSecretTokenHashed = :editToken",
+    ExpressionAttributeNames: { '#editSecretTokenHashed': 'editSecretTokenHashed' },
+    ExpressionAttributeValues: { ':editToken': { 'S': getHashedValue(editToken) }},
+    TableName: tableName,
+    IndexName: "EditToken"
+   };
+
+  const result = await dynamodb.query(params).promise();
+
+  console.log(result);
+  console.log(result.Items[0]);
+  console.log(result.Items[0].identifierHash);
+
+  return result.Items[0].identifierHash;
+}
+
 module.exports.getPortfolio = async (event, context) => {
   console.log(JSON.stringify(event,null,2));
 
-  var portfolioId;
+  return await getPortfolioFromId(event.pathParameters.id);
+}
 
-  //support loading the portfolio ID as both a query parameter or a path parameter
-  //if one fails, just try the other
-  try{
-    portfolioId = event.queryStringParameters.portfolioId
-  } catch(error) {
-    portfolioId = event.pathParameters.id;
-  }
-
+async function getPortfolioFromId(portfolioId){
   console.log(portfolioId,null,2);
 
   const portfolioIdHashed = getHashedValue(portfolioId);
@@ -80,7 +123,7 @@ module.exports.getPortfolio = async (event, context) => {
   return {
     statusCode: 200,
     body: JSON.stringify({
-      coins: coins
+      coins: coins,
     })
   };
 }

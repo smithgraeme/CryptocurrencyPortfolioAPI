@@ -9,8 +9,12 @@ provider:
        Action:
          - "dynamodb:UpdateItem"
          - "dynamodb:PutItem"
+         - "dynamodb:UpdateItem"
          - "dynamodb:GetItem"
-       Resource: "arn:aws:dynamodb:*:*:table/${self:resources.Resources.portfoliosTable.Properties.TableName}"
+         - "dynamodb:Query"
+       Resource:
+         - "arn:aws:dynamodb:*:*:table/${self:resources.Resources.portfoliosTable.Properties.TableName}"
+         - "arn:aws:dynamodb:*:*:table/${self:resources.Resources.portfoliosTable.Properties.TableName}*"
 
 functions:
   createPortfolio:
@@ -23,12 +27,19 @@ functions:
       stage: ${self:provider.stage}
       table: ${self:resources.Resources.portfoliosTable.Properties.TableName}
 
+  editPortfolio:
+    handler: portfolioService.editPortfolio
+    events:
+      - http:
+          path: editPortfolio
+          method: post
+    environment:
+      stage: ${self:provider.stage}
+      table: ${self:resources.Resources.portfoliosTable.Properties.TableName}
+
   getPortfolio:
     handler: portfolioService.getPortfolio
     events:
-      - http:
-          path: getPortfolio
-          method: get
       - http:
           path: portfolio/{id}
           method: get
@@ -36,7 +47,6 @@ functions:
             parameters:
               paths:
                 id: true
-
     environment:
       stage: ${self:provider.stage}
       table: ${self:resources.Resources.portfoliosTable.Properties.TableName}
@@ -51,9 +61,19 @@ resources:
        AttributeDefinitions:
         - AttributeName: identifierHash
           AttributeType: S
+        - AttributeName: editSecretTokenHashed
+          AttributeType: S
        KeySchema:
           - AttributeName: identifierHash
             KeyType: HASH
+       GlobalSecondaryIndexes:
+         - IndexName: EditToken
+           KeySchema:
+            - AttributeName: editSecretTokenHashed
+              KeyType: HASH
+           Projection:
+             ProjectionType: ALL
+
  Outputs:
     portfoliosTableArn:
       Description: The ARN for the portfolio table
