@@ -56,15 +56,15 @@ resources:
    portfoliosTable:
      Type: AWS::DynamoDB::Table
      Properties:
-       TableName: portfoliosTable_${self:provider.stage}
+       TableName: portfoliosTbl_${self:provider.stage}
        BillingMode: PAY_PER_REQUEST
        AttributeDefinitions:
-        - AttributeName: identifierHash
+        - AttributeName: identifier
           AttributeType: S
         - AttributeName: editSecretTokenHashed
           AttributeType: S
        KeySchema:
-          - AttributeName: identifierHash
+          - AttributeName: identifier
             KeyType: HASH
        GlobalSecondaryIndexes:
          - IndexName: EditToken
@@ -72,7 +72,7 @@ resources:
             - AttributeName: editSecretTokenHashed
               KeyType: HASH
            Projection:
-             ProjectionType: ALL
+             ProjectionType: KEYS_ONLY
 
  Outputs:
     portfoliosTableArn:

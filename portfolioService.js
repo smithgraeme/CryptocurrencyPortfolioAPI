@@ -18,7 +18,6 @@ module.exports.createPortfolio = async (event, context) => {
   const getUuid = () => uuidv4().replace(/-/g, ''); //the dashes are annoying in URLs. g replaces globally (multiple instances)
 
   const portfolioId = getUuid();
-  const portfolioIdHashed = getHashedValue(portfolioId);
 
   const editSecretToken = getUuid();
   const editSecretTokenHashed = getHashedValue(editSecretToken);
@@ -27,7 +26,7 @@ module.exports.createPortfolio = async (event, context) => {
 
   const params = {
     Item: {
-     "identifierHash": {S: portfolioIdHashed},
+     "identifier": {S: portfolioId},
      "editSecretTokenHashed": {S: editSecretTokenHashed},
      "name": {S: parsedBody.name},
      "coins": {S: JSON.stringify(parsedBody.coins)}
@@ -56,15 +55,21 @@ module.exports.editPortfolio = async (event, context) => {
   console.log(JSON.stringify(parsedBody,null,2));
   //console.log(parsedBody);
 
-  const identifierHash = await getPrimaryKeyFromEditTokenIndex(parsedBody.editToken);
+  const identifier = await getIdentifierFromEditTokenIndex(parsedBody.editToken);
 
   const params = {
     Key: {
-     "identifierHash": identifierHash,
+     "identifier": identifier,
     },
-    ExpressionAttributeNames: { '#coins': 'coins' },
-    ExpressionAttributeValues: { ':coins': { 'S': JSON.stringify(parsedBody.coins) }},
-    UpdateExpression: "SET #coins = :coins",
+    ExpressionAttributeNames: {
+      '#coins': 'coins',
+      '#name': 'name'
+    },
+    ExpressionAttributeValues: {
+      ':coins': { 'S': JSON.stringify(parsedBody.coins) },
+      ':name': { 'S': parsedBody.name },
+    },
+    UpdateExpression: "SET #coins = :coins, #name = :name",
     TableName: tableName
   };
 
@@ -72,12 +77,10 @@ module.exports.editPortfolio = async (event, context) => {
 
   return {
     statusCode: 200,
-    // body: JSON.stringify({
-    // })
   };
 };
 
-async function getPrimaryKeyFromEditTokenIndex(editToken){
+async function getIdentifierFromEditTokenIndex(editToken){
   const params = {
     KeyConditionExpression: "#editSecretTokenHashed = :editToken",
     ExpressionAttributeNames: { '#editSecretTokenHashed': 'editSecretTokenHashed' },
@@ -90,9 +93,9 @@ async function getPrimaryKeyFromEditTokenIndex(editToken){
 
   console.log(result);
   console.log(result.Items[0]);
-  console.log(result.Items[0].identifierHash);
+  console.log(result.Items[0].identifier);
 
-  return result.Items[0].identifierHash;
+  return result.Items[0].identifier;
 }
 
 module.exports.getPortfolio = async (event, context) => {
@@ -104,12 +107,10 @@ module.exports.getPortfolio = async (event, context) => {
 async function getPortfolioFromId(portfolioId){
   console.log(portfolioId,null,2);
 
-  const portfolioIdHashed = getHashedValue(portfolioId);
-
   const params = {
     Key: {
-     "identifierHash": {
-       S: portfolioIdHashed
+     "identifier": {
+       S: portfolioId
       },
     },
     TableName: tableName
@@ -124,6 +125,7 @@ async function getPortfolioFromId(portfolioId){
     statusCode: 200,
     body: JSON.stringify({
       coins: coins,
+      name: result.Item.name.S
     })
   };
 }
