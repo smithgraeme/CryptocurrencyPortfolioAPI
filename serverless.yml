@@ -20,10 +20,6 @@ provider:
 #            - "Ref" : "ServerlessDeploymentBucket"
 #            - "/*"
 
-# you can define service wide environment variables here
-#  environment:
-#    variable1: value1
-
 # you can add packaging information here
 #package:
 #  include:
@@ -34,25 +30,31 @@ provider:
 #    - exclude-me-dir/**
 
 functions:
-  hello:
-    handler: handler.hello
+  createPortfolio:
+    handler: portfolioService.createPortfolio
+    events:
+      - http:
+          path: createPortfolio
+          method: post
+    environment:
+      stage: ${self:provider.stage}
+      table: ${self:resources.Resources.portfoliosTable.Properties.TableName}
 
-#      - http:
-#          path: users/create
-#          method: get
-
-#    Define function environment variables here
-#    environment:
-#      variable2: value2
-
-# you can add CloudFormation resource templates here
-#resources:
-#  Resources:
-#    NewResource:
-#      Type: AWS::S3::Bucket
-#      Properties:
-#        BucketName: my-new-bucket
-#  Outputs:
-#     NewOutput:
-#       Description: "Description for the output"
-#       Value: "Some output value"
+resources:
+ Resources:
+   portfoliosTable:
+     Type: AWS::DynamoDB::Table
+     Properties:
+       TableName: portfoliosTable_${self:provider.stage}
+       BillingMode: PAY_PER_REQUEST
+       AttributeDefinitions:
+        - AttributeName: identifierHash
+          AttributeType: S
+       KeySchema:
+          - AttributeName: identifierHash
+            KeyType: HASH
+ Outputs:
+    portfoliosTableArn:
+      Description: The ARN for the portfolio table
+      Value:
+        "Fn::GetAtt": [ portfoliosTable, Arn ]
