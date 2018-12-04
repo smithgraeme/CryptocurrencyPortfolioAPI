@@ -4,7 +4,7 @@ provider:
   name: aws
   stage: ${opt:stage, 'dev'}
   runtime: nodejs8.10
-  memorySize: 512
+  memorySize: 128
   iamRoleStatements:
      - Effect: "Allow"
        Action:
